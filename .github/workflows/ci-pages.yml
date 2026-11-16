@@ -72,6 +72,8 @@ jobs:
       - run: npm run build
         env:
           RELEASE_VERSION: ${{ inputs.release_tag || '' }}
+          # Address of the duel server (wss://…/ws); online duels stay hidden when empty.
+          VITE_DUEL_SERVER: ${{ vars.DUEL_SERVER_URL }}
       - name: Verify release build metadata
         if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
         run: node scripts/check-release.js

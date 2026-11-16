@@ -30,6 +30,22 @@ Dans **Mes aventures**, choisir Horloge ou Maths : XP, score, séries, coffres e
 
 **Relire la leçon** est disponible dans l’aventure Horloge et via le bouton livre pendant un duel. Ce grimoire reprend les aiguilles, les graduations, les conversions matin/après-midi, midi/minuit et le déplacement continu de la petite aiguille. Une horloge manipulable et quatre exemples permettent de revoir les notions à son rythme. Ouvrir la leçon suspend le décompte, le chrono et l’animation ; la fermer reprend la même question.
 
+## Duels en ligne
+
+Sur l’écran de défi, **Contre un joueur** ouvre l’arène en ligne : la liste des joueurs connectés, avec leur mage et leur nom. **Défier** envoie une invitation ; l’autre joueur accepte ou refuse, et l’invitation expire après 20 secondes. L’épreuve (Horloge ou Maths) se choisit dans le salon.
+
+Dans un duel en ligne, les deux mages ont **100 PV** et chaque manche est une **course**. Chacun reçoit une question à son propre niveau ; le premier qui répond juste lance le seul sort de la manche et retire **20 PV** à l’adversaire, **25** s’il a répondu dans la première moitié du temps. Une erreur ne coûte pas de vie, mais elle bloque le joueur pour la manche et laisse le champ libre à l’autre. Le duel s’arrête quand un mage tombe à 0 PV, ou après **10 manches** : le mage qui a le plus de PV gagne, et l’égalité existe. Quitter ou perdre la connexion donne la victoire à l’autre joueur. Un duel en ligne ne change ni les XP ni les aventures.
+
+Seuls le nom du mage et son apparence sont visibles des autres joueurs. Il n’y a ni messagerie, ni compte, ni historique : le serveur ne garde rien une fois la connexion fermée. Le bouton n’apparaît que si l’application a été construite avec l’adresse d’un serveur de duels.
+
+### Serveur de duels
+
+Le serveur vit dans son propre dépôt : [magic-learning-quest-srv](https://github.com/stevenCayla/magic-learning-quest-srv). C’est un petit service Node.js (WebSocket) sans base de données, qui vérifie lui-même les réponses : une question envoyée à un joueur ne contient jamais sa solution. Son README décrit le déploiement (Docker, proxy TLS) et le protocole.
+
+Il embarque une copie de `src/domain/`. Après un changement des règles ou des questions ici, lancer `npm run sync-domain -- ../magic-learning-quest` dans le dépôt du serveur, puis le redéployer.
+
+Côté application, l’adresse est lue à la construction dans `VITE_DUEL_SERVER` (par exemple `wss://magic-learning-quest-srv.jabiru-software.com/ws`). Pour la publication, la renseigner dans la variable de dépôt GitHub **`DUEL_SERVER_URL`** (Settings → Secrets and variables → Actions → Variables) ; la CI la transmet au build. En local : `VITE_DUEL_SERVER=ws://localhost:8787/ws npm run dev`.
+
 ## Stack et architecture
 
 JavaScript ES modules, HTML sémantique, CSS responsive et Vite. Aucun framework d’interface ni service distant nécessaire au jeu. Illustration d’accueil originale au style arcade, SVG de l’académie et polices système : pas de dépendance à des images, polices ou ressources externes. Les icônes et le décor sont originaux, sans éléments de la licence Harry Potter.
@@ -43,6 +59,8 @@ src/
     duel.js         # Rencontres, horloge de combat pure et personnalisation normalisée
     onboarding.js   # Création, brouillon, validation finale et compatibilité
     storage.js      # Sauvegarde versionnée, validation et restauration
+    versus.js       # Règles des duels en ligne, partagées avec le serveur
+  online/client.js  # Canal WebSocket vers le serveur de duels
   ui/battle/
     controller.js   # Phases, saisie, interruptions et déclenchement des effets
     view.js         # Composition de l’arène
@@ -53,6 +71,8 @@ src/
     scenes.js       # 20 décors en lien avec les étapes
     battle.css      # Arène paysage, animation de baguette, vol et impact
     arena-arcade.css # Habillage arcade, panneaux du duel et poses
+    online.js       # Salon des joueurs, invitations et duel en ligne
+    spell.js        # Visée du projectile entre les deux mages
   ui/clock-lesson.js # Leçon illustrée et horloge manipulable
   ui/adventure-settings.js # Confirmation de remise à zéro ciblée
   ui/zoom-guard.js  # Gestes de zoom et raccourcis
@@ -76,6 +96,7 @@ scripts/check-release.js # Vérifie le tag, le commit et les métadonnées avant
 tests/
   onboarding.test.js # Brouillon, profils existants, validation et versions
   health.test.js    # Vie, défaite, reprise de niveau et compatibilité
+  versus.test.js    # Règles des duels en ligne
   domain.test.js    # Tests métier Node sans DOM
   adventures.test.js # Étoiles, indépendance, progression, migrations et remise à zéro
   duel.test.js      # Temps de combat, pauses, énergie, accessoires et anciens formats

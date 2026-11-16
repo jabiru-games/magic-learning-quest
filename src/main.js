@@ -6,6 +6,8 @@ import { openClockLesson } from './ui/clock-lesson.js';
 import { installZoomGuard } from './ui/zoom-guard.js';
 import { load, save } from './domain/storage.js';
 import { createBattleController } from './ui/battle/controller.js';
+import { createOnlineDuel } from './ui/battle/online.js';
+import { DUEL_SERVER } from './online/client.js';
 import { wizardSVG } from './ui/battle/characters.js';
 import { normalizeAvatar, AVATAR_OPTIONS } from './domain/duel.js';
 import './ui/battle/battle.css';
@@ -60,7 +62,7 @@ function bindAdventureTabs(renderPage) {
       }),
   );
 }
-const battle = createBattleController({
+const duelLinks = {
   getState: () => state,
   setState: (value) => {
     state = value;
@@ -69,6 +71,18 @@ const battle = createBattleController({
   render: (content) => shell(content),
   onNavigate: navigate,
   sounds,
+};
+// Online duels only exist when the build knows a duel server.
+const online = DUEL_SERVER ? createOnlineDuel({ ...duelLinks, url: DUEL_SERVER }) : null;
+const battle = createBattleController({
+  ...duelLinks,
+  onOnline: online
+    ? (mode) => {
+        battle.stop();
+        screen = mode;
+        online.open(mode);
+      }
+    : undefined,
 });
 function start(mode) {
   if (!state.onboarding.completed) return home();
@@ -286,6 +300,8 @@ function mage() {
 }
 function navigate(next) {
   battle.stop();
+  online?.stop();
+  if (['clock', 'math'].includes(next)) return start(next);
   if (!state.onboarding.completed) {
     screen = 'home';
     home();
