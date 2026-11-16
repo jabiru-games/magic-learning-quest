@@ -16,6 +16,7 @@ import {
 import { recordAnswer } from '../../domain/progression.js';
 import { encounter, DuelClock, NEXT_MS, avatarColor } from '../../domain/duel.js';
 import { openClockLesson } from '../clock-lesson.js';
+import { aimSpell } from './spell.js';
 import {
   battleView,
   introPanel,
@@ -28,7 +29,14 @@ import {
 
 const freshDuel = () => ({ errors: 0, fast: 0, xp: 0 });
 
-export function createBattleController({ getState, setState, render, onNavigate, sounds }) {
+export function createBattleController({
+  getState,
+  setState,
+  render,
+  onNavigate,
+  onOnline,
+  sounds,
+}) {
   let mode = null,
     exercise = null,
     current = null,
@@ -186,7 +194,7 @@ export function createBattleController({ getState, setState, render, onNavigate,
     );
     panel.innerHTML =
       kind === 'intro'
-        ? introPanel({ exercise, encounter: current })
+        ? introPanel({ exercise, encounter: current, online: !!onOnline })
         : kind === 'correction'
           ? correctionPanel({
               exercise,
@@ -203,6 +211,8 @@ export function createBattleController({ getState, setState, render, onNavigate,
                 levelXP: progress.xp % LEVEL_XP,
               });
     panel.querySelector('#panel-next').onclick = panelNext;
+    const versus = panel.querySelector('#panel-online');
+    if (versus) versus.onclick = () => onOnline(mode);
     const home = panel.querySelector('#panel-home');
     if (home) home.onclick = () => onNavigate('home');
     const lesson = panel.querySelector('#panel-lesson');
@@ -344,31 +354,7 @@ export function createBattleController({ getState, setState, render, onNavigate,
     root().classList.toggle('player-critical', value <= 25);
   }
   function measureSpell() {
-    if (!root()) return;
-    const reverse = clock?.phase?.startsWith('failure');
-    const from = document
-      .querySelector(`${reverse ? '.fighter-enemy' : '.fighter-player'} .pose-cast [data-wand-tip]`)
-      ?.getBoundingClientRect();
-    const to = document
-      .querySelector(`${reverse ? '.fighter-player' : '.fighter-enemy'} .pose-idle .hit-target`)
-      ?.getBoundingClientRect();
-    const box = root().getBoundingClientRect();
-    if (!from || !to) return;
-    const x = from.x + from.width / 2 - box.x,
-      y = from.y + from.height / 2 - box.y,
-      tx = to.x + to.width / 2 - box.x,
-      ty = to.y + to.height / 2 - box.y;
-    for (const [name, value] of Object.entries({
-      'from-x': x,
-      'from-y': y,
-      'to-x': tx,
-      'to-y': ty,
-    }))
-      root().style.setProperty(`--${name}`, `${value}px`);
-    root().style.setProperty(
-      '--flight-angle',
-      `${(Math.atan2(ty - y, tx - x) * 180) / Math.PI}deg`,
-    );
+    aimSpell(root(), clock?.phase?.startsWith('failure'));
   }
   function submit(timedOut = false) {
     if (!clock || blocked()) return;
