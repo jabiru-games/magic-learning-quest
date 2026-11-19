@@ -72,9 +72,11 @@ test('une étoile obtenue redémarre au niveau 1 sans remise à zéro de l’aut
   assert.equal(r.state.adventures.clock.cycleCorrect, 0);
   assert.deepEqual(r.state.adventures.math, s.adventures.math);
   s = r.state;
-  s.adventures.clock.xp = 3975;
+  const jump = (xp) =>
+    (s.adventures.clock = { ...s.adventures.clock, xp, cursor: xp, stars: undefined });
+  jump(3975);
   assert.equal(answer(s, 'clock').stars, 2);
-  s.adventures.clock.xp = 5975;
+  jump(5975);
   const third = answer(s, 'clock');
   assert.equal(third.stars, 3);
   assert.equal(third.completed, true);

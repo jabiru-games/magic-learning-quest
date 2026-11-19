@@ -8,6 +8,7 @@ import {
 } from '../../domain/exercises.js';
 import {
   adventureFor,
+  cursorOf,
   difficultyForAdventure,
   restartLevel,
   ENEMY_DAMAGE,
@@ -80,7 +81,7 @@ export function createBattleController({
   function start(nextMode) {
     stop();
     mode = nextMode;
-    current = encounter(adventureFor(getState(), mode).xp);
+    current = encounter(cursorOf(adventureFor(getState(), mode)));
     clock = new DuelClock(performance.now());
     rescue = false;
     duel = freshDuel();
@@ -129,7 +130,7 @@ export function createBattleController({
     impactPlayed = false;
     shownPanel = null;
     paused = false;
-    current = encounter(progress.xp);
+    current = encounter(cursorOf(progress));
     render(
       battleView({
         exercise,
@@ -206,9 +207,9 @@ export function createBattleController({
           : kind === 'victory'
             ? victoryPanel({ encounter: current, duel, ...spoils })
             : defeatPanel({
-                encounter: encounter(progress.xp),
+                encounter: encounter(cursorOf(progress)),
                 mode,
-                levelXP: progress.xp % LEVEL_XP,
+                levelXP: cursorOf(progress) % LEVEL_XP,
               });
     panel.querySelector('#panel-next').onclick = panelNext;
     const versus = panel.querySelector('#panel-online');
@@ -419,7 +420,7 @@ export function createBattleController({
   }
   function advance() {
     const completed = result;
-    const destination = encounter(adventureFor(getState(), mode).xp);
+    const destination = encounter(cursorOf(adventureFor(getState(), mode)));
     if (completed.starEarned) {
       rescue = true;
       clock.phase = 'star';

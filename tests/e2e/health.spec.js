@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   boot,
+  enter,
   ready,
   begin,
   digits,
@@ -105,7 +106,7 @@ test('rechargement à zéro PV ne permet pas d’éviter la défaite', async ({ 
   await fail(page, 'clock');
   await page.reload();
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('#choose-clock').click();
+  await enter(page, 'clock');
   await landscape(page);
   await expect(page.locator('#player-health')).toHaveAttribute('value', '0');
   await expect(page.locator('.battle-shell')).toHaveAttribute('data-phase', 'defeat');

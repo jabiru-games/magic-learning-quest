@@ -2114,6 +2114,21 @@ progress::-moz-progress-bar {
   color: #ffdc63;
   font-size: 13px;
 }
+.is-home .arcade-home-progress.home-welcome {
+  display: block;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.is-home .arcade-home-progress.home-welcome strong {
+  font-size: inherit;
+}
+.arcade-menu-button .menu-icon svg {
+  display: block;
+  width: 1.15em;
+  height: 1.15em;
+}
 .arcade-menu {
   display: grid;
   gap: 13px;

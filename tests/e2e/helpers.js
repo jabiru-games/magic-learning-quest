@@ -67,12 +67,13 @@ async function boot(page, overrides = {}, viewport = { width: 844, height: 390 }
   await page.goto(base);
   await expect(page.getByRole('heading', { name: 'Magic Learning Quest' })).toBeVisible();
 }
+// From the home screen: opens the level map of an adventure, then its current level.
+async function enter(page, mode = 'clock') {
+  await page.locator(`#choose-${mode}`).click();
+  await page.locator('#train-adventure').click();
+}
 async function ready(page, mode = 'clock') {
-  await page
-    .getByRole('button', {
-      name: mode === 'clock' ? /Horloge magique/ : /Maths magiques/,
-    })
-    .click();
+  await enter(page, mode);
   await landscape(page);
   await begin(page);
 }
@@ -135,6 +136,7 @@ async function settings(page) {
 
 export {
   boot,
+  enter,
   ready,
   begin,
   retry,

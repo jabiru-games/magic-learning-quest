@@ -36,7 +36,6 @@ for (const kind of ['boy', 'girl']) {
     await page.locator('#creation-continue').click();
     await expect(page.locator('#choose-clock')).toBeVisible();
     await expect(page.locator('#choose-math')).toBeVisible();
-    await expect(page.locator('#explore')).toBeVisible();
     await expect(page.locator('#begin-creation')).toHaveCount(0);
     const saved = await state(page);
     expect(saved.onboarding.completed).toBe(true);
@@ -153,6 +152,9 @@ test('nom vide refusé, caractères HTML affichés comme texte', async ({ page }
   await page.locator('#creation-continue').click();
   await expect(page.locator('.arcade-home-progress')).toContainText('<b>Lina</b>');
   await expect(page.locator('.arcade-home-progress b')).toHaveCount(0);
+  await expect(page.locator('.arcade-home-progress')).toHaveText(
+    'Bienvenue <b>Lina</b>, à toi de jouer !',
+  );
 });
 
 test('clavier iPhone : champ et validation restent visibles, navigation clavier des onglets', async ({

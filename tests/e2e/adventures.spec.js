@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   boot,
+  enter,
   ready,
   begin,
   digits,
@@ -30,7 +31,7 @@ for (const [width, height] of [
     }));
     expect(geometry.sw).toBeLessThanOrEqual(width);
     expect(geometry.sh).toBeLessThanOrEqual(height);
-    for (const id of ['#choose-clock', '#choose-math', '#explore', '#home-settings']) {
+    for (const id of ['#choose-clock', '#choose-math', '#home-settings']) {
       const b = await page.locator(id).boundingBox();
       expect(b.height).toBeGreaterThanOrEqual(44);
       expect(b.y).toBeGreaterThanOrEqual(0);
@@ -116,7 +117,7 @@ for (const [period, hour, answer, expected, given, rule] of [
 
 test('leçon depuis aventure : horloge manipulable, conversions et exemples', async ({ page }) => {
   await boot(page);
-  await page.locator('#explore').click();
+  await page.locator('#choose-clock').click();
   await page.locator('#read-lesson').click();
   const lesson = page.locator('.clock-lesson');
   await expect(lesson).toBeVisible();
@@ -134,7 +135,124 @@ test('leçon depuis aventure : horloge manipulable, conversions et exemples', as
   await expect(lesson).toHaveCount(0);
   await page.locator('[data-adventure=math]').click();
   await expect(page.locator('#read-lesson')).toHaveCount(0);
-  await expect(page.locator('#train-adventure')).toContainText('Maths');
+  await expect(page.locator('#train-adventure')).toHaveAttribute('aria-label', /Maths/);
+});
+
+test('carte des niveaux : île en cours au centre, niveaux verrouillés, étoiles par niveau', async ({
+  page,
+}) => {
+  await boot(page, { clockXP: 350, mathXP: 2100 });
+  await page.locator('#choose-clock').click();
+  const map = page.locator('.adventure-map');
+  await expect(map.getByRole('heading', { name: 'MON AVENTURE' })).toBeVisible();
+  await expect(map.locator('.isle')).toHaveCount(20);
+  await expect(map.locator('.isle.is-selected')).toHaveAttribute('data-level', '4');
+  await expect(map.locator('.map-summary')).toContainText('Niveau 4 / 20 • 3 étoiles sur 60');
+  await expect(map.locator('#map-level-title')).toHaveText('NIVEAU 4 • LA TOUR DE L’HORLOGE');
+  await expect(map.locator('#train-adventure')).toHaveText('JOUER');
+  await expect(map.locator('#map-level-info')).toHaveText('À toi de jouer ! Encore 50 XP.');
+  await expect(map.locator('.isle.is-done')).toHaveCount(3);
+  await expect(map.locator('.isle.is-locked')).toHaveCount(16);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  await map.locator('#map-next').click();
+  await expect(map.locator('.isle.is-selected')).toHaveAttribute('data-level', '5');
+  await expect(map.locator('#map-level-info')).toHaveText('Termine le niveau 4 pour l’ouvrir.');
+  await expect(map.locator('#train-adventure')).toBeDisabled();
+  await map.locator('#map-prev').click();
+  await map.locator('#map-prev').click();
+  await expect(map.locator('#map-level-info')).toHaveText(
+    '1 étoile sur 3. Rejoue en difficulté deux étoiles !',
+  );
+  await expect(map.locator('#train-adventure')).toBeEnabled();
+  await expect(map.locator('#train-adventure')).toHaveText('REJOUER');
+  for (const size of [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(size);
+    await page.waitForTimeout(700);
+    const stars = await map.locator('.isle.is-selected .isle-stars').boundingBox();
+    const panel = await map.locator('.map-panel').boundingBox();
+    expect(stars.height).toBeGreaterThan(0);
+    expect(stars.y + stars.height).toBeLessThanOrEqual(panel.y);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const pictures = () =>
+    map
+      .locator('.isle')
+      .evaluateAll((isles) =>
+        isles.map((isle) => isle.querySelector('img')?.getAttribute('src') ?? 'drawn'),
+      );
+  const clockPictures = await pictures();
+  await map.locator('[data-adventure=math]').click();
+  expect(await pictures()).toEqual(clockPictures);
+  await expect(map.locator('.isle.is-selected')).toHaveAttribute('data-level', '2');
+  await expect(map.locator('.map-summary')).toContainText('21 étoiles sur 60');
+  await expect(map.locator('.isle[data-level="20"]')).toHaveAttribute(
+    'aria-label',
+    /terminé, 1 étoile sur 3/,
+  );
+  await map.locator('#map-settings').click();
+  await page
+    .getByRole('navigation', { name: 'Navigation mobile', exact: true })
+    .getByRole('button', { name: 'Aventure' })
+    .click();
+  await expect(map.locator('[data-adventure=math]')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#map-back').click();
+  await expect(page.getByRole('heading', { name: 'Magic Learning Quest' })).toBeVisible();
+});
+
+test('carte des niveaux : un niveau terminé se rejoue en difficulté deux étoiles', async ({
+  page,
+}) => {
+  await boot(page, { clockXP: 350 });
+  await page.locator('#choose-clock').click();
+  await page.setViewportSize({ width: 844, height: 390 });
+  const map = page.locator('.adventure-map');
+  await expect(map).not.toHaveClass(/is-tall/);
+  await map.locator('#train-adventure').click();
+  await expect(page.locator('.battle-shell')).toHaveAttribute('data-star', '1');
+  await page.evaluate(() => (location.hash = ''));
+  await page.reload();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#choose-clock').click();
+  await page.locator('.isle[data-level="1"]').evaluate((isle) => isle.click());
+  await expect(map.locator('#train-adventure')).toHaveText('REJOUER');
+  await page.setViewportSize({ width: 844, height: 390 });
+  await map.locator('#train-adventure').click();
+  await expect(page.locator('.battle-shell')).toHaveAttribute('data-star', '2');
+  const saved = (await state(page)).adventures.clock;
+  expect(saved.cursor).toBe(2000);
+  expect(saved.stars.slice(0, 5)).toEqual([1, 1, 1, 0, 0]);
+  expect(saved.partial[3]).toBe(50);
+});
+
+test('accueil : Horloge et Maths ouvrent la carte sur le niveau à jouer', async ({ page }) => {
+  await boot(page, { clockXP: 350, mathXP: 120 });
+  await expect(page.locator('#explore')).toHaveCount(0);
+  await page.locator('#choose-math').click();
+  const map = page.locator('.adventure-map');
+  await expect(map.locator('[data-adventure=math]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(map.locator('.isle.is-selected')).toHaveAttribute('data-level', '2');
+  await page.locator('#map-back').click();
+  // Level 1 chosen for a replay but not started: it is already won, so the map
+  // opens on the next level to win instead.
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('astrea.save'));
+    Object.assign(save.adventures.clock, {
+      cursor: 2000,
+      stars: [1, 1, 1, ...Array(17).fill(0)],
+      partial: [0, 0, 0, 50, ...Array(16).fill(0)],
+    });
+    localStorage.setItem('astrea.save', JSON.stringify(save));
+  });
+  await page.reload();
+  await page.locator('#choose-clock').click();
+  await expect(map.locator('.isle.is-selected')).toHaveAttribute('data-level', '4');
+  await expect(map.locator('#train-adventure')).toHaveText('JOUER');
 });
 
 test('leçon en combat : défi, question et chrono vraiment suspendus', async ({ page }) => {
@@ -146,7 +264,7 @@ test('leçon en combat : défi, question et chrono vraiment suspendus', async ({
       sound: false,
     },
   });
-  await page.locator('#choose-clock').click();
+  await enter(page, 'clock');
   await landscape(page);
   const waiting = await page.locator('#timer').textContent();
   await page.locator('#battle-lesson').click();

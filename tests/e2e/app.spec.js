@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   boot,
+  enter,
   ready,
   begin,
   digits,
@@ -37,7 +38,7 @@ test('défi : saisie bloquée et aucun temps compté avant COMMENCER LE DUEL', a
       sound: false,
     },
   });
-  await page.getByRole('button', { name: /Horloge magique/ }).click();
+  await enter(page, 'clock');
   await landscape(page);
   const shell = page.locator('.battle-shell');
   const panel = page.locator('#duel-panel');
@@ -71,7 +72,7 @@ test('portrait : invitation à tourner, vraie pause, sortie accessible sans rota
   page,
 }) => {
   await boot(page, {}, { width: 320, height: 568 });
-  await page.getByRole('button', { name: /Horloge magique/ }).click();
+  await enter(page, 'clock');
   await expect(page.getByRole('heading', { name: 'Tourne ton téléphone' })).toBeVisible();
   await page.clock.runFor(20000);
   await expect(page.locator('.battle-shell')).toHaveAttribute('data-phase', 'intro');
@@ -79,7 +80,7 @@ test('portrait : invitation à tourner, vraie pause, sortie accessible sans rota
   await expect(page.locator('#rotate-exit')).toBeFocused();
   await page.getByRole('button', { name: 'Retour à l’accueil' }).click();
   await expect(page.getByRole('heading', { name: 'Magic Learning Quest' })).toBeVisible();
-  await page.getByRole('button', { name: /Maths magiques/ }).click();
+  await enter(page, 'math');
   await page.setViewportSize({ width: 844, height: 390 });
   await expect(page.locator('.rotate-notice')).toBeHidden();
   await page.clock.runFor(5150);
@@ -397,15 +398,12 @@ test('nom personnalisé affiché comme texte et non comme HTML', async ({ page }
   await expect(page.locator('#mage-card-name b')).toHaveCount(0);
 });
 
-test('navigation : aventure, grimoire, personnalisation et niveaux manuels', async ({ page }) => {
+test('navigation : aventure, réglages, personnalisation et niveaux manuels', async ({ page }) => {
   await boot(page);
-  await page.getByRole('button', { name: 'Explorer mes aventures' }).click();
-  await page.getByRole('button', { name: '♜ Grimoire' }).click();
-  await expect(page.getByRole('heading', { name: 'Le grimoire des trésors.' })).toBeVisible();
-  await page
-    .getByRole('navigation', { name: 'Navigation mobile', exact: true })
-    .getByRole('button', { name: 'Réglages' })
-    .click();
+  await page.locator('#choose-clock').click();
+  await expect(page.getByRole('button', { name: /grimoire/i })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Réglages' }).click();
+  await expect(page.getByRole('button', { name: /grimoire/i })).toHaveCount(0);
   await page.getByRole('radio', { name: /Grand mage/ }).check();
   await page.getByRole('radio', { name: '5 · Toutes les minutes' }).check();
   await page.reload();
@@ -482,7 +480,7 @@ test('arrière-plan : défi, chrono et sort suspendus sans double gain', async (
       sound: false,
     },
   });
-  await page.getByRole('button', { name: /Maths magiques/ }).click();
+  await enter(page, 'math');
   await landscape(page);
   const hide = () =>
     page.evaluate(() => {
@@ -625,7 +623,7 @@ test('sons : départ par geste, signal au début du duel, lancer, impact et mute
   });
   await boot(page);
   expect(await page.evaluate(() => !!window.testAudio)).toBe(false);
-  await page.getByRole('button', { name: /Maths magiques/ }).click();
+  await enter(page, 'math');
   await landscape(page);
   await page.clock.runFor(6000);
   await expect.poll(() => page.evaluate(() => !!window.testAudio)).toBe(true);
@@ -667,7 +665,7 @@ test('audio indisponible ne bloque ni défi ni réponses', async ({ page }) => {
 test('réduction des mouvements : défi et impact lisibles sans animations', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await boot(page);
-  await page.getByRole('button', { name: /Maths magiques/ }).click();
+  await enter(page, 'math');
   await landscape(page);
   await expect(page.locator('#duel-panel')).toBeVisible();
   await expect(page.locator('#duel-panel')).toHaveCSS('opacity', '1');
