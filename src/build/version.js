@@ -5,7 +5,7 @@ export function buildVersion(releaseTag, packageVersion) {
     return {
       version: releaseTag,
       release: true,
-      url: `https://github.com/stevenCayla/magic-learning-quest/releases/tag/${releaseTag}`,
+      url: `https://github.com/jabiru-games/magic-learning-quest/releases/tag/${releaseTag}`,
     };
   }
   return { version: `v${packageVersion}-dev`, release: false, url: '' };
