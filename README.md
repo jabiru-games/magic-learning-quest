@@ -2,7 +2,7 @@
 
 Une PWA éducative en français pour les 8–10 ans : lire une horloge analogique et calculer de tête pour traverser un monde magique original, affronter le dragon d’ombre et délivrer la princesse Aélis. Les deux entraînements proposent **deux aventures indépendantes**, chacune avec 20 niveaux et trois étoiles, sauvegardées sur l’appareil.
 
-Application publiée sur GitHub Pages : **https://stevencayla.github.io/magic-learning-quest/**.
+Application publiée sur GitHub Pages : **https://jabiru-games.github.io/magic-learning-quest/**.
 
 ## Jouer
 
@@ -40,7 +40,7 @@ Seuls le nom du mage et son apparence sont visibles des autres joueurs. Il n’y
 
 ### Serveur de duels
 
-Le serveur vit dans son propre dépôt : [magic-learning-quest-srv](https://github.com/stevenCayla/magic-learning-quest-srv). C’est un petit service Node.js (WebSocket) sans base de données, qui vérifie lui-même les réponses : une question envoyée à un joueur ne contient jamais sa solution. Son README décrit le déploiement (Docker, proxy TLS) et le protocole.
+Le serveur vit dans son propre dépôt : [magic-learning-quest-srv](https://github.com/jabiru-games/magic-learning-quest-srv). C’est un petit service Node.js (WebSocket) sans base de données, qui vérifie lui-même les réponses : une question envoyée à un joueur ne contient jamais sa solution. Son README décrit le déploiement (Docker, proxy TLS) et le protocole.
 
 Il embarque une copie de `src/domain/`. Après un changement des règles ou des questions ici, lancer `npm run sync-domain -- ../magic-learning-quest` dans le dépôt du serveur, puis le redéployer.
 
@@ -209,7 +209,7 @@ Activation par le propriétaire si l’intégration n’a pas les droits Pages :
 2. Autoriser GitHub Actions pour le dépôt et les actions officielles utilisées, si nécessaire.
 3. Publier une release stable depuis `main`, ou relancer **Quality & Pages** sur `main` avec son `release_tag` après activation.
 4. Si l’environnement `github-pages` demande une validation, approuver le déploiement.
-5. Ouvrir **https://stevencayla.github.io/magic-learning-quest/**, puis vérifier un rechargement en mode avion après la première ouverture.
+5. Ouvrir **https://jabiru-games.github.io/magic-learning-quest/**, puis vérifier un rechargement en mode avion après la première ouverture.
 
 Le dépôt est désormais public. Pour un déploiement futur dans un dépôt privé : selon le forfait GitHub du propriétaire, Pages peut nécessiter un forfait payant compatible. Si GitHub le signale, activer un forfait compatible ou décider explicitement de rendre le dépôt public. Aucun changement de visibilité n’est effectué automatiquement.
 
