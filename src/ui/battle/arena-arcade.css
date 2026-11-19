@@ -1347,6 +1347,55 @@
   font-size: 24px;
   letter-spacing: 5px;
 }
+.lobby-turn {
+  display: none;
+}
+/* Upright phone: the lobby stacks, the duel that follows is still played sideways. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .online-lobby .lobby-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .online-lobby .lobby-me {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  .online-lobby .lobby-me figcaption {
+    order: 0;
+    flex: 1;
+    min-width: 0;
+  }
+  .online-lobby .lobby-portrait {
+    flex: 0 0 64px;
+    height: 76px;
+  }
+  .online-lobby .lobby-head {
+    flex-wrap: wrap;
+  }
+  .online-lobby .battle-title h1 {
+    font-size: 17px;
+    white-space: nowrap;
+  }
+  .online-lobby .battle-title h1::before,
+  .online-lobby .battle-title h1::after {
+    display: none;
+  }
+  .online-lobby .lobby-join label {
+    white-space: nowrap;
+  }
+  .online-lobby .lobby-join {
+    flex-wrap: wrap;
+  }
+  .online-lobby .lobby-turn {
+    display: block;
+    margin: 0;
+    font-size: 12px;
+    color: #e8c96f;
+  }
+}
 .lobby-status {
   margin: 0;
   display: flex;

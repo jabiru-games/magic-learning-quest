@@ -118,3 +118,27 @@ test('publication refusée si le build ne correspond pas exactement au tag et au
   ])
     assert.throws(() => validateReleaseMetadata(bad, 'v1.1.0', commit));
 });
+
+test('nom de mage proposé à la création : valide, remplaçable, jamais écrasé', async () => {
+  const { MAGE_NAMES, MAGE_TITLES, randomMageName, cleanMageName } =
+    await import('../src/domain/onboarding.js');
+  for (const name of MAGE_NAMES)
+    for (const title of MAGE_TITLES) {
+      const full = `${name} ${title}`;
+      assert.ok(full.length <= 18, full);
+      assert.equal(cleanMageName(full), full);
+    }
+  assert.equal(randomMageName(() => 0), `${MAGE_NAMES[0]} ${MAGE_TITLES[0]}`);
+  assert.equal(randomMageName(() => 1), `${MAGE_NAMES.at(-1)} ${MAGE_TITLES.at(-1)}`);
+
+  let s = updateCreation(freshState(), { step: 'choice' }, () => 0);
+  assert.equal(s.onboarding.avatar.name, randomMageName(() => 0));
+  s = updateCreation(s, { kind: 'girl' });
+  assert.equal(s.onboarding.avatar.name, randomMageName(() => 0), 'le nom suit le personnage');
+  s = updateCreation(s, { key: 'name', value: '' });
+  assert.equal(s.onboarding.avatar.name, '');
+  assert.throws(() => completeCreation(updateCreation(s, { step: 'customize' })));
+  s = updateCreation(s, { key: 'name', value: 'Lina' });
+  s = updateCreation(updateCreation(s, { step: 'welcome' }), { step: 'choice' }, () => 0.9);
+  assert.equal(s.onboarding.avatar.name, 'Lina', 'un nom saisi n’est pas remplacé');
+});

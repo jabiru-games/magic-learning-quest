@@ -10,7 +10,7 @@ Le fond de l’accueil suit un dégradé continu de bleu clair vers le bleu fonc
 
 À la toute première ouverture, l’accueil présente uniquement **Commencer** et le numéro de version. Le joueur choisit **Garçon** ou **Fille**, indique son nom (obligatoire, 18 caractères maximum), puis personnalise son apparence, sa tenue et sa baguette. Le décor de l’école, de la lune et des nuages est commun aux deux étapes de création. Sur téléphone, ces étapes se consultent en portrait ; une rotation conserve les choix. Les marges de l’encoche et le clavier logiciel sont pris en compte. Les choix sont visibles immédiatement et le même personnage apparaît ensuite dans les combats.
 
-Le brouillon est sauvegardé à chaque choix : fermer ou recharger reprend l’étape en cours. **Commencer mon aventure** valide le personnage puis affiche Horloge et Maths. L’initialisation ne réapparaît plus. Les réglages permettent ensuite de modifier le personnage et son nom. Les anciennes sauvegardes sans champ `onboarding` sont considérées comme déjà initialisées pour conserver le personnage et la progression existants. Réinitialiser les XP ne relance pas la création.
+Un **nom de mage est proposé** d’office (« Astra des Étoiles », « Milo du Soleil »…) : on peut le garder, ou l’effacer avec la croix et écrire le sien. Le brouillon est sauvegardé à chaque choix : fermer ou recharger reprend l’étape en cours. **Commencer mon aventure** valide le personnage puis affiche Horloge et Maths. L’initialisation ne réapparaît plus. Les réglages permettent ensuite de modifier le personnage et son nom. Les anciennes sauvegardes sans champ `onboarding` sont considérées comme déjà initialisées pour conserver le personnage et la progression existants. Réinitialiser les XP ne relance pas la création.
 
 Depuis l’accueil, choisir **Horloge magique** ou **Maths magiques** : la carte des niveaux de l’aventure s’ouvre sur le niveau à jouer, et **JOUER** lance le duel. Utiliser les grandes touches du pavé ou les chiffres du clavier, puis **Lancer mon sort**. Pour l’horloge, toucher le champ heures ou minutes pour le modifier. Le champ minutes s’active automatiquement après une heure complète ; une heure à un chiffre comme 1 peut être saisie `01` ou en touchant ensuite le champ minutes. `C` efface le champ actif, `⌫` retire son dernier chiffre. `Tab` permet de parcourir les commandes et `Entrée` active le bouton sélectionné. `Échap` met le duel en pause.
 
@@ -36,7 +36,7 @@ Chaque aventure a sa **carte des niveaux** en plein écran : vingt îles flottan
 
 ## Duels en ligne
 
-Sur l’accueil, **Défier un ami** ouvre l’arène en ligne ; **Contre un joueur**, sur l’écran de défi d’un duel, y mène aussi. On y voit la liste des joueurs connectés, avec leur mage et leur nom.
+Sur l’accueil, **Défier un ami** ouvre l’arène en ligne, utilisable téléphone à la verticale (le duel, lui, se joue à l’horizontale) ; **Contre un joueur**, sur l’écran de défi d’un duel, y mène aussi. On y voit la liste des joueurs connectés, avec leur mage et leur nom.
 
 Pour jouer avec un ami précis, l’un touche **Créer un code** et lui donne les quatre chiffres affichés ; l’autre les saisit dans **J’ai un code**. Ils se retrouvent dans un salon privé où ils ne voient qu’eux (8 joueurs au plus), invisible depuis la liste publique. **Quitter le salon** ramène à la liste publique.
 

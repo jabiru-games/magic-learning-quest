@@ -10,6 +10,35 @@ export function characterPreset(kind, name = '') {
     robe: kind === 'girl' ? 'emerald' : 'violet',
   };
 }
+// A ready-made mage name, so that creation never depends on typing one.
+export const MAGE_NAMES = [
+  'Astra',
+  'Orion',
+  'Nova',
+  'Lumi',
+  'Zéphyr',
+  'Mira',
+  'Elio',
+  'Sélène',
+  'Fira',
+  'Milo',
+  'Lyra',
+  'Timéo',
+];
+export const MAGE_TITLES = [
+  'des Étoiles',
+  'des Brumes',
+  'du Soleil',
+  'de la Lune',
+  'des Vents',
+  'd’Azur',
+  'des Flammes',
+  'du Matin',
+];
+export function randomMageName(random = Math.random) {
+  const pick = (list) => list[Math.min(list.length - 1, Math.floor(random() * list.length))];
+  return `${pick(MAGE_NAMES)} ${pick(MAGE_TITLES)}`;
+}
 export function freshOnboarding() {
   return {
     completed: false,
@@ -43,7 +72,7 @@ export function restoreOnboarding(value, xp = 0) {
     },
   };
 }
-export function updateCreation(state, change) {
+export function updateCreation(state, change, random = Math.random) {
   if (state.onboarding.completed) throw new Error('Ton personnage est déjà créé');
   const next = structuredClone(state),
     creation = next.onboarding;
@@ -52,10 +81,11 @@ export function updateCreation(state, change) {
       throw new Error('Étape inconnue');
     if (change.step === 'customize' && !creation.selected) throw new Error('Choisis ton mage');
     creation.step = change.step;
-    // The choice screen opens with the boy preselected; the draft name is kept.
+    // The choice screen opens with the boy preselected and a suggested name,
+    // which the player can erase and replace; a name already typed is kept.
     if (change.step === 'choice' && !creation.selected) {
       creation.selected = 'boy';
-      creation.avatar = characterPreset('boy', creation.avatar.name);
+      creation.avatar = characterPreset('boy', creation.avatar.name || randomMageName(random));
     }
   }
   if (change.kind && change.kind !== creation.selected) {
