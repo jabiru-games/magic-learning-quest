@@ -26,6 +26,11 @@ for (const kind of ['boy', 'girl']) {
     await expect(page.locator('#home-settings')).toHaveCount(0);
     await expect(page.locator('.mobile-nav')).toHaveCount(0);
     await choose(page, kind);
+    // A name is suggested: the mage can be created without typing, or renamed.
+    await expect(page.getByLabel('Ton nom de mage')).toHaveValue(/^\S+ \S.+$/);
+    await expect(page.locator('#creation-continue')).toBeEnabled();
+    await page.getByRole('button', { name: 'Effacer le nom' }).click();
+    await expect(page.getByLabel('Ton nom de mage')).toHaveValue('');
     await expect(page.locator('#creation-continue')).toBeDisabled();
     await page.getByLabel('Ton nom de mage').fill('Lina');
     await page.getByRole('radio', { name: 'Azur', exact: true }).check();

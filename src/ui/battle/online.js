@@ -96,9 +96,11 @@ export function createOnlineDuel({ url, getState, setState, render, onNavigate, 
   function syncRotation() {
     const shell = root();
     if (!shell || !stage) return;
+    // The lobby works upright; only the duel itself needs the phone on its side.
+    const blocked = portrait.matches && !shell.classList.contains('online-lobby');
     const turn = shell.querySelector('.rotate-notice');
-    if (turn) turn.hidden = !portrait.matches;
-    shell.classList.toggle('needs-rotation', portrait.matches);
+    if (turn) turn.hidden = !blocked;
+    shell.classList.toggle('needs-rotation', blocked);
   }
 
   // Lobby ---------------------------------------------------------------------------------
@@ -118,7 +120,7 @@ export function createOnlineDuel({ url, getState, setState, render, onNavigate, 
    )
    .join(
      '',
-   )}</div></div><div id="lobby-room" class="lobby-room"></div><p id="lobby-status" class="lobby-status" role="status"></p><ul id="lobby-list" class="lobby-list"></ul></section></div>
+   )}</div></div><div id="lobby-room" class="lobby-room"></div><p id="lobby-status" class="lobby-status" role="status"></p><p class="lobby-turn">Le duel se joue à l’horizontale : tourne ton téléphone quand il commence.</p><ul id="lobby-list" class="lobby-list"></ul></section></div>
  <div class="duel-pause" id="lobby-dialog" hidden></div>
  <section class="rotate-notice" hidden aria-label="Tourne ton téléphone"><div class="rotate-phone" aria-hidden="true">▯ ↻ ▭</div><h2>Tourne ton téléphone</h2><p>Le duel se joue à l’horizontale.</p><button class="battle-tool" id="rotate-exit">Retour à l’accueil</button></section></section>`,
     );
