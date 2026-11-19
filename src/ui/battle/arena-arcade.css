@@ -1287,6 +1287,66 @@
   background: linear-gradient(#fff0b4, #eabb54);
   color: #4a3017;
 }
+.lobby-room {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.lobby-room:empty {
+  display: none;
+}
+.lobby-room .panel-quiet,
+.lobby-room .panel-go {
+  min-height: 40px;
+  padding: 4px 14px;
+  font-size: 14px;
+}
+.lobby-join {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.lobby-join label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff1cf;
+}
+.lobby-join input {
+  width: 92px;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 2px 8px;
+  border: 2px solid #dcc983;
+  border-radius: 12px;
+  background: #1a1640;
+  color: #fff6dc;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-align: center;
+}
+.lobby-join input::placeholder {
+  color: #fff6dc55;
+}
+.lobby-code {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff1cf;
+}
+.lobby-code strong {
+  margin-left: 8px;
+  padding: 2px 12px;
+  border: 2px solid #28152f;
+  border-radius: 12px;
+  background: linear-gradient(#fff0b4, #ffdc63);
+  color: #28152f;
+  font-size: 24px;
+  letter-spacing: 5px;
+}
 .lobby-status {
   margin: 0;
   display: flex;

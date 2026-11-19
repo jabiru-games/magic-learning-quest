@@ -1,0 +1,540 @@
+/* Adventure level map: a 720-unit-high stage scaled to the screen. */
+.in-map main {
+  padding: 0;
+}
+.adventure-map {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  color: #fff6dc;
+  background:
+    radial-gradient(ellipse 60% 22% at 18% 78%, #a274f066, transparent 70%),
+    radial-gradient(ellipse 55% 20% at 82% 84%, #9a6cf060, transparent 70%),
+    radial-gradient(ellipse 70% 18% at 50% 100%, #b98af580, transparent 72%),
+    radial-gradient(ellipse 40% 14% at 12% 30%, #8f8cf550, transparent 70%),
+    radial-gradient(ellipse 36% 12% at 88% 26%, #9c8cf548, transparent 70%),
+    linear-gradient(180deg, #7cc8fb 0%, #4f78e6 16%, #3b2fb4 40%, #4b2fb8 64%, #6a3fd0 100%);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.map-stage {
+  position: relative;
+  transform-origin: 0 0;
+}
+.map-zone {
+  position: absolute;
+  inset: -400px;
+  opacity: 0;
+  transition: opacity 900ms ease;
+  pointer-events: none;
+}
+.map-zone.is-on {
+  opacity: 1;
+}
+.map-zone-1 {
+  background: linear-gradient(180deg, #0f5a3caa 0%, #1d7a4a55 55%, #0b3d2a99 100%);
+}
+.map-zone-2 {
+  background: linear-gradient(180deg, #a9d8ff88 0%, #3a5fb066 50%, #1b2a6baa 100%);
+}
+.map-zone-3 {
+  background: linear-gradient(180deg, #2a0612bb 0%, #8a1f2e77 50%, #ff7a3055 100%);
+}
+.map-drag {
+  position: absolute;
+  inset: 0;
+  touch-action: pan-y;
+  cursor: grab;
+}
+.map-drag.is-dragging {
+  cursor: grabbing;
+}
+.map-track {
+  position: absolute;
+  left: 0;
+  top: calc(50% - 382px);
+  height: 720px;
+  transition: transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.map-trail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+.isle {
+  position: absolute;
+  width: 200px;
+  height: 250px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 1;
+  transform: scale(0.74);
+  transition: transform 520ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+.isle.is-selected {
+  z-index: 3;
+  transform: scale(1.2);
+}
+.isle:focus-visible {
+  outline: 4px solid #fff6dc;
+  outline-offset: 4px;
+  border-radius: 40px;
+}
+.isle-painting,
+.isle-art {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.isle-painting {
+  object-fit: cover;
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 72%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 72%, transparent 100%);
+}
+.isle-padlock {
+  position: absolute;
+  right: 22px;
+  top: 84px;
+  width: 40px;
+  height: 44px;
+}
+.map-thumb .isle-padlock {
+  right: 8px;
+  top: 8px;
+  width: 30px;
+  height: 33px;
+}
+.isle.is-locked .isle-painting,
+.map-thumb.is-locked img {
+  filter: saturate(0.35) brightness(0.72);
+}
+.isle-pointer {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  width: 34px;
+  height: 26px;
+  margin-left: -17px;
+}
+.isle.is-selected .isle-pointer {
+  display: block;
+}
+.isle-stars {
+  position: absolute;
+  left: 50%;
+  bottom: -30px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+}
+.map-level-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.map-level-stars {
+  display: flex;
+  gap: 2px;
+}
+.map-level-stars svg {
+  width: 28px;
+  height: 28px;
+}
+.isle-stars svg {
+  width: 26px;
+  height: 26px;
+}
+.isle-burst {
+  position: absolute;
+  left: -20px;
+  top: -20px;
+  width: 240px;
+  height: 290px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6dccc 0%, #ffdc6388 35%, transparent 70%);
+  animation: map-burst 1300ms 350ms ease-out both;
+}
+.isle.is-fresh .isle-painting,
+.isle.is-fresh .isle-art {
+  animation: map-glow 1500ms 350ms ease-in-out;
+}
+@keyframes map-burst {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+@keyframes map-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 #ffdc63);
+  }
+  45% {
+    filter: drop-shadow(0 0 30px #ffdc63) brightness(1.3);
+  }
+}
+.map-unlocked {
+  position: absolute;
+  left: 50%;
+  top: 196px;
+  margin: 0;
+  padding: 10px 28px;
+  z-index: 7;
+  border: 3px solid #28152f;
+  border-radius: 30px;
+  background: linear-gradient(#fff0b4, #ffdc63);
+  color: #28152f;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  box-shadow: 0 5px 0 #bd653b;
+  pointer-events: none;
+  animation: map-toast 2000ms ease-out both;
+}
+@keyframes map-toast {
+  0% {
+    transform: translate(-50%, -24px) scale(0.6);
+    opacity: 0;
+  }
+  14% {
+    transform: translate(-50%, 0) scale(1.08);
+    opacity: 1;
+  }
+  24% {
+    transform: translate(-50%, 0) scale(1);
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+}
+.map-button {
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 3px solid #735225;
+  border-radius: 16px;
+  background: linear-gradient(#fff0b4, #eabb54);
+  box-shadow:
+    0 4px #35223c,
+    0 0 0 2px #ffe8a4;
+  cursor: pointer;
+  z-index: 5;
+}
+.map-button svg {
+  width: 34px;
+  height: 34px;
+}
+.map-button:focus-visible,
+.map-mode:focus-visible,
+.map-play:focus-visible {
+  outline: 4px solid #fff6dc;
+  outline-offset: 3px;
+}
+.map-back {
+  position: absolute;
+  left: 22px;
+  top: 20px;
+}
+.map-tools {
+  position: absolute;
+  right: 22px;
+  top: 20px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+}
+.map-settings {
+  border-color: #3c2c38;
+  background: linear-gradient(#ffe8a7, #efbd5b 65%, #c38b3f);
+  box-shadow:
+    inset 0 3px #fff2c5,
+    0 4px #1b132a,
+    0 0 0 2px #f6d689;
+}
+.map-button.is-small {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+}
+.map-button.is-small svg {
+  width: 28px;
+  height: 28px;
+}
+.map-arrow {
+  position: absolute;
+  top: calc(50% - 2px);
+  border-radius: 30px;
+}
+.map-arrow svg {
+  width: 30px;
+  height: 30px;
+}
+.map-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.map-prev {
+  left: 22px;
+}
+.map-next {
+  right: 22px;
+}
+.map-header {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 14px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+.map-header h1 {
+  margin: 0;
+  font-family: 'Arial Black', 'Trebuchet MS', system-ui, sans-serif;
+  font-weight: 1000;
+  font-size: 52px;
+  line-height: 1;
+  letter-spacing: -1px;
+  color: #ffdc63;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 6px #28152f;
+  text-shadow: 0 5px 0 #bd653b;
+  white-space: nowrap;
+}
+.map-modes {
+  margin-top: 12px;
+  padding: 3px;
+  display: flex;
+  border: 3px solid #ffdc63;
+  border-radius: 36px;
+  background: #21194a;
+  box-shadow: 0 4px 0 #151533;
+  pointer-events: auto;
+}
+.map-mode {
+  width: 228px;
+  min-height: 52px;
+  padding: 4px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 3px solid #21194a;
+  border-radius: 30px;
+  background: transparent;
+  color: #fff6dc;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  cursor: pointer;
+}
+.map-mode svg {
+  width: 30px;
+  height: 30px;
+}
+.map-mode[aria-pressed='true'] {
+  border-color: #303023;
+}
+.map-mode-clock[aria-pressed='true'] {
+  background: linear-gradient(#d3fb8e, #9bd748 45%, #75af2a);
+  color: #24351e;
+}
+.map-mode-math[aria-pressed='true'] {
+  background: linear-gradient(#caeaff, #82cbe9 45%, #4c98ca);
+  color: #193656;
+}
+.map-summary {
+  margin: 10px 0 0;
+  padding: 0 90px;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+  color: #fff6dc;
+  text-shadow: 0 2px 3px #211126;
+}
+.map-panel {
+  position: absolute;
+  left: 100px;
+  right: 100px;
+  bottom: 12px;
+  min-height: 126px;
+  box-sizing: border-box;
+  padding: 8px 22px 8px 26px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  border: 3px solid #e8c96f;
+  border-radius: 44px;
+  background: linear-gradient(180deg, #37047aee, #24186bf2);
+  box-shadow:
+    inset 0 0 0 2px #514568,
+    0 6px 0 #151533;
+  z-index: 6;
+}
+.map-thumb {
+  flex-shrink: 0;
+  position: relative;
+  width: 150px;
+  height: 104px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #2c2170;
+}
+.map-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.map-thumb.is-drawn .isle-art {
+  position: absolute;
+  left: 15px;
+  top: -14px;
+  width: 120px;
+  height: 150px;
+}
+.map-rule {
+  flex-shrink: 0;
+  width: 3px;
+  height: 78px;
+  border-radius: 2px;
+  background: #e8c96f;
+}
+.map-level {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.map-level h2 {
+  margin: 0;
+  font-family: inherit;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  line-height: 1.05;
+  color: #ffdc63;
+  text-shadow: 0 3px 0 #28152f;
+}
+.map-level p {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fff6dc;
+}
+.map-level p:last-child {
+  font-size: 17px;
+  font-weight: 700;
+  color: #e8c96f;
+}
+.map-play {
+  flex-shrink: 0;
+  width: 280px;
+  height: 88px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 3px solid #303023;
+  border-radius: 28px;
+  background: linear-gradient(#d3fb8e, #9bd748 45%, #75af2a);
+  box-shadow:
+    inset 0 3px 0 #f7ffd5aa,
+    inset 0 -5px 0 #57842488,
+    0 6px 0 #140c1f,
+    0 0 0 3px #e8c96f;
+  color: #24351e;
+  text-shadow: 0 1px 0 #ffffff70;
+  font: inherit;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  cursor: pointer;
+}
+.map-play svg {
+  width: 30px;
+  height: 30px;
+}
+.map-play.is-replay {
+  font-size: 34px;
+}
+.map-play:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+/* Portrait screens: narrower stage, the level card stacks its button underneath. */
+.adventure-map.is-tall .map-header h1 {
+  margin-top: 78px;
+}
+.adventure-map.is-tall .map-tools {
+  flex-direction: row-reverse;
+  align-items: flex-start;
+}
+.adventure-map.is-tall .map-mode {
+  width: 200px;
+}
+.adventure-map.is-tall .map-summary {
+  padding: 0 24px;
+}
+.adventure-map.is-tall .map-track {
+  top: calc(50% - 400px);
+}
+.adventure-map.is-tall .map-arrow {
+  top: calc(50% + 150px);
+}
+.adventure-map.is-tall .map-panel {
+  left: 16px;
+  right: 16px;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+  padding: 16px 20px 18px;
+  border-radius: 36px;
+}
+.adventure-map.is-tall .map-play {
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-track,
+  .isle,
+  .map-zone {
+    transition: none;
+  }
+  .isle-burst,
+  .isle.is-fresh .isle-painting,
+  .isle.is-fresh .isle-art {
+    animation: none;
+  }
+  .isle-burst {
+    display: none;
+  }
+}

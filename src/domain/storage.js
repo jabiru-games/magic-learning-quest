@@ -1,8 +1,18 @@
 import { freshOnboarding, restoreOnboarding } from './onboarding.js';
-import { freshAdventure, MAX_HEALTH } from './adventures.js';
+import {
+  freshAdventure,
+  MAX_HEALTH,
+  LEVELS_PER_STAR,
+  frontierOf,
+  journeyFor,
+  levelUnlocked,
+  runCursor,
+  starsOf,
+  starsFromXP,
+} from './adventures.js';
 import { DEFAULT_AVATAR, normalizeAvatar } from './duel.js';
 import { DIFFICULTIES } from './exercises.js';
-import { unlockedRewards } from './progression.js';
+import { rewardsFor, unlockedRewards } from './progression.js';
 export const SAVE_KEY = 'astrea.save';
 export const SAVE_VERSION = 2;
 const stats = () => ({ correct: 0, wrong: 0, totalMs: 0, buckets: {} });
@@ -30,6 +40,39 @@ export function freshState() {
   };
 }
 const natural = (x) => Number.isSafeInteger(x) && x >= 0;
+const levelList = (list, max) =>
+  Array.isArray(list) &&
+  list.length === LEVELS_PER_STAR &&
+  list.every((value) => natural(value) && value <= max);
+// Stars per level and the level being played. Older saves only have XP, which says both.
+function levelProgress(source) {
+  if (source.stars === undefined && source.cursor === undefined) {
+    return {};
+  }
+  if (
+    !levelList(source.stars, 3) ||
+    (source.partial !== undefined && !levelList(source.partial, 99))
+  )
+    throw new Error('Invalid levels');
+  const stars = [...source.stars];
+  if (stars.some((count, index) => count > 0 && index > 0 && stars[index - 1] === 0))
+    throw new Error('Invalid levels');
+  const partial = source.partial ? [...source.partial] : starsFromXP(0);
+  const run = natural(source.cursor) ? journeyFor(source.cursor) : null;
+  const mastered = stars.every((count) => count === 3);
+  const consistent =
+    run &&
+    (run.complete
+      ? mastered
+      : levelUnlocked(stars, run.stageIndex) &&
+        run.targetStar === Math.min(3, stars[run.stageIndex] + 1));
+  const index = frontierOf(stars);
+  return {
+    stars,
+    partial,
+    cursor: consistent ? source.cursor : mastered ? 6000 : runCursor(stars, index, partial[index]),
+  };
+}
 export function restore(raw) {
   try {
     const data = JSON.parse(raw);
@@ -107,6 +150,7 @@ export function restore(raw) {
           bestStreak: mode === (lastMode ?? 'clock') ? base.bestStreak : 0,
           cycleCorrect: xp ? Math.floor((base.stats[mode].correct * (xp % 2000)) / xp) : 0,
           rewards: unlockedRewards(xp),
+          ...levelProgress({ xp }),
         };
         base.adventures[mode].levelStartCorrect = base.adventures[mode].cycleCorrect;
       }
@@ -135,8 +179,9 @@ export function restore(raw) {
           ...Object.fromEntries(
             ['xp', 'score', 'streak', 'bestStreak', 'cycleCorrect'].map((k) => [k, source[k]]),
           ),
-          rewards: unlockedRewards(source.xp),
+          ...levelProgress(source),
         };
+        base.adventures[mode].rewards = rewardsFor(starsOf(base.adventures[mode]));
       }
       base.legacyRewards = Array.isArray(data.legacyRewards)
         ? data.legacyRewards.filter((r) => unlockedRewards(6000).includes(r))

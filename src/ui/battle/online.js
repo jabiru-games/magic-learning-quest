@@ -18,6 +18,9 @@ const ERRORS = {
   busy: 'Ce joueur est déjà occupé.',
   gone: 'Ce joueur est parti.',
   mode: 'Ce duel n’existe pas.',
+  room: 'Ce code n’existe pas. Vérifie-le avec ton ami.',
+  'room-full': 'Ce salon est complet.',
+  'room-tries': 'Trop de codes essayés. Reviens plus tard.',
 };
 // Delay between a spell leaving the wand and its impact, in milliseconds.
 const IMPACT_MS = 1000;
@@ -40,7 +43,9 @@ export function createOnlineDuel({ url, getState, setState, render, onNavigate, 
     deadline = 0,
     ticker = null,
     timers = [],
-    notice = '';
+    notice = '',
+    room = null,
+    origin = null;
   const portrait = matchMedia('(max-width: 600px) and (orientation: portrait)');
   const root = () => document.querySelector('.battle-shell');
   const $ = (selector) => document.querySelector(selector);
@@ -59,9 +64,12 @@ export function createOnlineDuel({ url, getState, setState, render, onNavigate, 
     mode = null;
     sounds.stop();
   }
-  function open(nextMode) {
+  // `from` is where the back button returns: the duel against the machine, or home.
+  function open(nextMode, from = origin ?? 'duel') {
     stop();
     mode = nextMode;
+    origin = from;
+    room = null;
     notice = '';
     players = [];
     lobby('connecting');
@@ -99,9 +107,9 @@ export function createOnlineDuel({ url, getState, setState, render, onNavigate, 
     const me = getState().avatar;
     render(
       `<section class="battle-shell online-lobby" data-phase="lobby" data-mode="${mode}">${sceneSVG(19)}<div class="battle-vignette" aria-hidden="true"></div>
- <header class="battle-toolbar"><button class="battle-tool" id="online-back" aria-label="Retour au duel contre la machine" title="Retour">${ICONS.back}</button><div class="battle-title"><h1>Duel en ligne</h1><p>${MODE_NAMES[mode]}</p></div><div class="battle-tools"><span class="battle-xp" id="online-count"></span></div></header>
+ <header class="battle-toolbar"><button class="battle-tool" id="online-back" aria-label="${origin === 'home' ? 'Retour à l’accueil' : 'Retour au duel contre la machine'}" title="Retour">${ICONS.back}</button><div class="battle-title"><h1>Duel en ligne</h1><p>${MODE_NAMES[mode]}</p></div><div class="battle-tools"><span class="battle-xp" id="online-count"></span></div></header>
  <div class="lobby-body"><figure class="lobby-me"><div class="lobby-portrait" aria-hidden="true">${wizardSVG({ avatar: me, prefix: 'lobby-me' })}</div><figcaption><span>TON MAGE</span><strong>${escapeHTML(me.name)}</strong></figcaption></figure>
- <section class="lobby-panel" aria-labelledby="lobby-title"><div class="lobby-head"><h2 id="lobby-title">Qui veux-tu défier ?</h2><div class="lobby-modes" role="group" aria-label="Épreuve du duel">${Object.entries(
+ <section class="lobby-panel" aria-labelledby="lobby-title"><div class="lobby-head"><h2 id="lobby-title">${room ? 'Salon privé' : 'Qui veux-tu défier ?'}</h2><div class="lobby-modes" role="group" aria-label="Épreuve du duel">${Object.entries(
    MODE_NAMES,
  )
    .map(
@@ -110,11 +118,11 @@ export function createOnlineDuel({ url, getState, setState, render, onNavigate, 
    )
    .join(
      '',
-   )}</div></div><p id="lobby-status" class="lobby-status" role="status"></p><ul id="lobby-list" class="lobby-list"></ul></section></div>
+   )}</div></div><div id="lobby-room" class="lobby-room"></div><p id="lobby-status" class="lobby-status" role="status"></p><ul id="lobby-list" class="lobby-list"></ul></section></div>
  <div class="duel-pause" id="lobby-dialog" hidden></div>
  <section class="rotate-notice" hidden aria-label="Tourne ton téléphone"><div class="rotate-phone" aria-hidden="true">▯ ↻ ▭</div><h2>Tourne ton téléphone</h2><p>Le duel se joue à l’horizontale.</p><button class="battle-tool" id="rotate-exit">Retour à l’accueil</button></section></section>`,
     );
-    $('#online-back').onclick = () => onNavigate(mode);
+    $('#online-back').onclick = () => onNavigate(origin === 'home' ? 'home' : mode);
     $('#rotate-exit').onclick = () => onNavigate('home');
     document.querySelectorAll('[data-lobby-mode]').forEach(
       (button) =>
@@ -124,7 +132,34 @@ export function createOnlineDuel({ url, getState, setState, render, onNavigate, 
         }),
     );
     syncRotation();
+    drawRoom();
     drawPlayers();
+  }
+  // A private room: one friend creates a four-digit code, the other types it in.
+  function drawRoom() {
+    const box = $('#lobby-room');
+    if (!box) return;
+    if (stage !== 'lobby') {
+      box.innerHTML = '';
+      return;
+    }
+    if (room) {
+      box.innerHTML = `<p class="lobby-code">Code du salon <strong id="room-code">${escapeHTML(room)}</strong></p><button class="panel-quiet" id="room-leave">Quitter le salon</button>`;
+      $('#room-leave').onclick = () => link?.send({ t: 'room-leave' });
+      return;
+    }
+    box.innerHTML = `<button class="panel-quiet" id="room-create">Créer un code</button><form id="room-form" class="lobby-join"><label for="room-input">J’ai un code</label><input id="room-input" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9]{4}" placeholder="0000" required /><button class="panel-go" id="room-join">Rejoindre</button></form>`;
+    $('#room-create').onclick = () => {
+      notice = '';
+      link?.send({ t: 'room-create' });
+    };
+    const input = $('#room-input');
+    input.oninput = () => (input.value = input.value.replace(/\D/g, '').slice(0, 4));
+    $('#room-form').onsubmit = (event) => {
+      event.preventDefault();
+      notice = '';
+      if (/^\d{4}$/.test(input.value)) link?.send({ t: 'room-join', code: input.value });
+    };
   }
   function drawPlayers() {
     const list = $('#lobby-list');
@@ -150,7 +185,9 @@ export function createOnlineDuel({ url, getState, setState, render, onNavigate, 
         ? free
           ? 'Touche « Défier » pour inviter un joueur.'
           : 'Tous les joueurs sont déjà en duel.'
-        : 'Aucun autre joueur pour l’instant. Reste ici : la liste se met à jour toute seule.');
+        : room
+          ? 'Donne ce code à ton ami : il apparaîtra ici dès qu’il l’aura saisi.'
+          : 'Aucun autre joueur pour l’instant. Reste ici : la liste se met à jour toute seule.');
     list.innerHTML = players
       .map(
         (p) =>
@@ -385,6 +422,11 @@ export function createOnlineDuel({ url, getState, setState, render, onNavigate, 
     switch (message.t) {
       case 'welcome':
         lobby('lobby');
+        break;
+      case 'room':
+        room = message.code;
+        notice = '';
+        if (stage === 'lobby') lobby('lobby');
         break;
       case 'players':
         players = message.list;

@@ -1,6 +1,12 @@
 import './style.css';
-import { STAGES } from './domain/progression.js';
-import { adventureFor, journeyFor, resetAdventure } from './domain/adventures.js';
+import {
+  adventureFor,
+  adventureStars,
+  cursorOf,
+  journeyFor,
+  resetAdventure,
+  selectLevel,
+} from './domain/adventures.js';
 import { mountAdventureReset } from './ui/adventure-settings.js';
 import { openClockLesson } from './ui/clock-lesson.js';
 import { installZoomGuard } from './ui/zoom-guard.js';
@@ -18,6 +24,7 @@ import { mountOnboarding, installCreationViewport } from './ui/onboarding.js';
 import { updateCreation, completeCreation } from './domain/onboarding.js';
 import { versionMarkup } from './ui/version.js';
 import { createSoundPlayer } from './ui/sound.js';
+import { createAdventureMap } from './ui/adventure/map.js';
 const sounds = createSoundPlayer();
 
 const restored = load();
@@ -50,18 +57,6 @@ const persist = () => {
 const modeLabel = (mode) => (mode === 'clock' ? 'Horloge' : 'Maths');
 const starsMarkup = (stars) =>
   `<span class="journey-stars" aria-label="${stars} étoiles sur 3">${'★'.repeat(stars)}<span>${'☆'.repeat(3 - stars)}</span></span>`;
-function adventureTabs() {
-  return `<nav class="adventure-tabs" aria-label="Choisir l’aventure">${['clock', 'math'].map((mode) => `<button class="secondary" data-adventure="${mode}" aria-pressed="${selectedAdventure === mode}">${mode === 'clock' ? '◷' : '✦'} Aventure ${modeLabel(mode)} ${starsMarkup(journeyFor(adventureFor(state, mode).xp).stars)}</button>`).join('')}</nav>`;
-}
-function bindAdventureTabs(renderPage) {
-  app.querySelectorAll('[data-adventure]').forEach(
-    (b) =>
-      (b.onclick = () => {
-        selectedAdventure = b.dataset.adventure;
-        renderPage();
-      }),
-  );
-}
 const duelLinks = {
   getState: () => state,
   setState: (value) => {
@@ -80,9 +75,20 @@ const battle = createBattleController({
     ? (mode) => {
         battle.stop();
         screen = mode;
-        online.open(mode);
+        online.open(mode, 'duel');
       }
     : undefined,
+});
+const adventureMap = createAdventureMap({
+  getState: () => state,
+  onPlay: (mode, index) => {
+    state = selectLevel(state, mode, index);
+    persist();
+    start(mode);
+  },
+  onNavigate: (next) => navigate(next),
+  onLesson: () => openClockLesson(),
+  onMode: (mode) => (selectedAdventure = mode),
 });
 function start(mode) {
   if (!state.onboarding.completed) return home();
@@ -99,11 +105,15 @@ function shell(content) {
     app.innerHTML = `<div class="app-shell is-home onboarding-welcome ${screen === 'mage' ? 'is-editing-mage' : ''}"><main id="main" tabindex="-1">${warning ? `<p class="notice" role="status">${escape(warning)}</p>` : ''}${content}</main><div id="toast" role="status" class="toast"></div></div>`;
     return;
   }
+  if (screen === 'adventure') {
+    app.innerHTML = `<div class="app-shell in-map"><main id="main" tabindex="-1">${warning ? `<p class="notice" role="status">${escape(warning)}</p>` : ''}${content}</main><div id="toast" role="status" class="toast"></div></div>`;
+    return;
+  }
   if (['clock', 'math'].includes(screen)) {
     app.innerHTML = `<div class="app-shell in-exercise"><main id="main" tabindex="-1">${warning ? `<p class="notice" role="status">${escape(warning)}</p>` : ''}${content}</main><div id="toast" role="status" class="toast"></div></div>`;
     return;
   }
-  app.innerHTML = `<div class="app-shell ${screen === 'home' ? 'is-home' : ''}"><header class="topbar"><a class="brand" href="#home" aria-label="Astréa, accueil"><span class="brand-mark" aria-hidden="true">✦</span><span>ASTRÉA<small>MAGIC LEARNING QUEST</small></span></a><div class="top-status"><span class="online-dot ${navigator.onLine ? '' : 'offline'}"></span><span id="connection">${navigator.onLine ? 'Prêt à explorer' : 'Hors connexion'}</span></div><div class="profile" aria-label="Ton mage"><span aria-hidden="true">🧙</span><div>${escape(state.avatar.name)}<small>Académie d’Astréa</small></div></div></header><div class="layout"><aside class="sidebar"><p class="eyebrow">TON ACADÉMIE</p><nav aria-label="Navigation principale">${navButton('home', '✦', 'Entraînement')}${navButton('adventure', '◇', 'Aventure')}${navButton('collection', '♜', 'Grimoire')}${navButton('settings', '⚙', 'Réglages')}</nav><div class="sidebar-quote"><span>☾</span><p>Les plus grands sorts<br>commencent par<br>un petit progrès.</p><small>ACADÉMIE D’ASTRÉA</small></div><button class="install sidebar-install" data-install>＋ Installer l’application</button></aside><main id="main" tabindex="-1">${warning ? `<p class="notice" role="status">${escape(warning)}</p>` : ''}${content}</main></div><nav class="mobile-nav" aria-label="Navigation mobile">${navButton('home', '✦', 'S’entraîner')}${navButton('adventure', '◇', 'Aventure')}${navButton('collection', '♜', 'Grimoire')}${navButton('settings', '⚙', 'Réglages')}</nav><div id="toast" role="status" class="toast"></div></div>`;
+  app.innerHTML = `<div class="app-shell ${screen === 'home' ? 'is-home' : ''}"><header class="topbar"><a class="brand" href="#home" aria-label="Astréa, accueil"><span class="brand-mark" aria-hidden="true">✦</span><span>ASTRÉA<small>MAGIC LEARNING QUEST</small></span></a><div class="top-status"><span class="online-dot ${navigator.onLine ? '' : 'offline'}"></span><span id="connection">${navigator.onLine ? 'Prêt à explorer' : 'Hors connexion'}</span></div><div class="profile" aria-label="Ton mage"><span aria-hidden="true">🧙</span><div>${escape(state.avatar.name)}<small>Académie d’Astréa</small></div></div></header><div class="layout"><aside class="sidebar"><p class="eyebrow">TON ACADÉMIE</p><nav aria-label="Navigation principale">${navButton('home', '✦', 'Entraînement')}${navButton('adventure', '◇', 'Aventure')}${navButton('settings', '⚙', 'Réglages')}</nav><div class="sidebar-quote"><span>☾</span><p>Les plus grands sorts<br>commencent par<br>un petit progrès.</p><small>ACADÉMIE D’ASTRÉA</small></div><button class="install sidebar-install" data-install>＋ Installer l’application</button></aside><main id="main" tabindex="-1">${warning ? `<p class="notice" role="status">${escape(warning)}</p>` : ''}${content}</main></div><nav class="mobile-nav" aria-label="Navigation mobile">${navButton('home', '✦', 'S’entraîner')}${navButton('adventure', '◇', 'Aventure')}${navButton('settings', '⚙', 'Réglages')}</nav><div id="toast" role="status" class="toast"></div></div>`;
   if (screen === 'home') app.querySelector('.mobile-nav')?.remove();
   app
     .querySelectorAll('[data-nav]')
@@ -135,11 +145,11 @@ function home() {
   }
   const card = (mode) => {
     const p = adventureFor(state, mode),
-      j = journeyFor(p.xp);
-    return `<button class="arcade-menu-button ${mode === 'clock' ? 'clock' : 'math'}-button" id="choose-${mode}"><span aria-hidden="true">${mode === 'clock' ? '◷' : '✦'}</span><span>${mode === 'clock' ? 'Horloge magique' : 'Maths magiques'}<small data-testid="${mode}-progress">${starsMarkup(j.stars)} · Niveau ${j.level}/20${j.complete ? ' · Maîtrise !' : ''}</small></span><span aria-hidden="true">➜</span></button>`;
+      j = journeyFor(cursorOf(p));
+    return `<button class="arcade-menu-button ${mode === 'clock' ? 'clock' : 'math'}-button" id="choose-${mode}"><span aria-hidden="true">${mode === 'clock' ? '◷' : '✦'}</span><span>${mode === 'clock' ? 'Horloge magique' : 'Maths magiques'}<small data-testid="${mode}-progress">${starsMarkup(adventureStars(p))} · Niveau ${j.level}/20${j.complete ? ' · Maîtrise !' : ''}</small></span><span aria-hidden="true">➜</span></button>`;
   };
   shell(
-    `<section class="arcade-home" aria-label="Accueil de l’académie d’Astréa">${firstLaunch ? '' : '<button class="home-settings" id="home-settings" aria-label="Réglages" title="Réglages"><span aria-hidden="true">⚙</span></button>'}<header class="arcade-brand"><p>ÉCOLE RONCHÈZE</p><h1 aria-label="Magic Learning Quest"><span>MAGIC</span><span>QUEST</span></h1><p class="arcade-subtitle">Deux aventures. Trois étoiles chacune !</p></header><div class="arcade-heroes" role="img" aria-label="Un apprenti mage, une chouette et un petit dragon"></div><div class="arcade-home-bottom">${firstLaunch ? '<p class="welcome-promise">Ton aventure commence ici !</p><button class="arcade-menu-button clock-button welcome-start" id="begin-creation"><svg aria-hidden="true" viewBox="0 0 44 44"><line x1="7" y1="38" x2="24" y2="21" stroke="#303023" stroke-width="8" stroke-linecap="round"/><line x1="7" y1="38" x2="24" y2="21" stroke="#c38b3f" stroke-width="4.5" stroke-linecap="round"/><polygon points="29,3 32.6,11.6 41.9,12.4 34.8,18.5 37,27.6 29,22.7 21,27.6 23.2,18.5 16.1,12.4 25.4,11.6" fill="#ffdc63" stroke="#303023" stroke-width="2.5" stroke-linejoin="round"/></svg> Commencer</button>' : `<div class="arcade-home-progress"><span>🧙 ${escape(state.avatar.name)}</span><strong>À toi de jouer !</strong></div><div class="arcade-menu" aria-label="Choisis ton entraînement">${card('clock')}${card('math')}<button class="arcade-menu-button adventure-button" id="explore" aria-label="Explorer mes aventures"><span aria-hidden="true">♜</span><span>Mes aventures<small>Horloge et Maths : chacune son chemin</small></span><span aria-hidden="true">➜</span></button></div>`}${versionMarkup()}</div></section><section class="home-rotate" aria-label="Accueil en portrait"><div aria-hidden="true">▭ ↻ ▯</div><h2>Tourne ton téléphone à la verticale</h2><p>L’accueil se consulte en portrait.<br>Les duels se jouent en paysage.</p></section>`,
+    `<section class="arcade-home" aria-label="Accueil de l’académie d’Astréa">${firstLaunch ? '' : '<button class="home-settings" id="home-settings" aria-label="Réglages" title="Réglages"><span aria-hidden="true">⚙</span></button>'}<header class="arcade-brand"><p>ÉCOLE RONCHÈZE</p><h1 aria-label="Magic Learning Quest"><span>MAGIC</span><span>QUEST</span></h1><p class="arcade-subtitle">Apprendre en s’amusant !</p></header><div class="arcade-heroes" role="img" aria-label="Un apprenti mage, une chouette et un petit dragon"></div><div class="arcade-home-bottom">${firstLaunch ? '<p class="welcome-promise">Ton aventure commence ici !</p><button class="arcade-menu-button clock-button welcome-start" id="begin-creation"><svg aria-hidden="true" viewBox="0 0 44 44"><line x1="7" y1="38" x2="24" y2="21" stroke="#303023" stroke-width="8" stroke-linecap="round"/><line x1="7" y1="38" x2="24" y2="21" stroke="#c38b3f" stroke-width="4.5" stroke-linecap="round"/><polygon points="29,3 32.6,11.6 41.9,12.4 34.8,18.5 37,27.6 29,22.7 21,27.6 23.2,18.5 16.1,12.4 25.4,11.6" fill="#ffdc63" stroke="#303023" stroke-width="2.5" stroke-linejoin="round"/></svg> Commencer</button>' : `<p class="arcade-home-progress home-welcome">Bienvenue <strong>${escape(state.avatar.name)}</strong>, à toi de jouer !</p><div class="arcade-menu" aria-label="Choisis ton entraînement">${card('clock')}${card('math')}${online ? '<button class="arcade-menu-button adventure-button" id="challenge-friend"><span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3.2"/><path d="M2.5 19c.6-3.4 2.7-5 5.5-5s4.900 1.600 5.500 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.300c3.200-.5 5.400 1.200 6 4.200"/></svg></span><span>Défier un ami<small>Duel en ligne</small></span><span aria-hidden="true">➜</span></button>' : ''}</div>`}${versionMarkup()}</div></section><section class="home-rotate" aria-label="Accueil en portrait"><div aria-hidden="true">▭ ↻ ▯</div><h2>Tourne ton téléphone à la verticale</h2><p>L’accueil se consulte en portrait.<br>Les duels se jouent en paysage.</p></section>`,
   );
   if (firstLaunch) {
     document.querySelector('#begin-creation').onclick = () => {
@@ -150,36 +160,20 @@ function home() {
     return;
   }
   document.querySelector('#home-settings').onclick = () => navigate('settings');
-  document.querySelector('#explore').onclick = () => navigate('adventure');
-  document.querySelector('#choose-clock').onclick = () => start('clock');
-  document.querySelector('#choose-math').onclick = () => start('math');
+  document.querySelector('#challenge-friend')?.addEventListener('click', () => {
+    battle.stop();
+    screen = selectedAdventure;
+    online.open(selectedAdventure, 'home');
+  });
+  for (const mode of ['clock', 'math'])
+    document.querySelector(`#choose-${mode}`).onclick = () => {
+      selectedAdventure = mode;
+      navigate('adventure');
+    };
 }
 function adventure() {
-  const progress = adventureFor(state, selectedAdventure),
-    j = journeyFor(progress.xp),
-    current = STAGES[j.stageIndex];
-  shell(
-    `<div class="page-heading"><div><p class="eyebrow">DEUX AVENTURES INDÉPENDANTES</p><h1>Mes aventures<span class="gold">.</span></h1><p>20 niveaux pour chaque étoile. Trois étoiles à gagner par aventure.</p></div><div class="adventure-links"><button class="secondary" id="open-grimoire">♜ Grimoire</button><button class="secondary" id="open-mage">✦ Mon mage</button></div></div>${adventureTabs()}<section class="quest-summary glass"><span class="quest-icon">${current.icon}</span><div><span class="eyebrow">AVENTURE ${modeLabel(selectedAdventure).toUpperCase()} · ÉTOILE ${j.targetStar}/3</span><h2>${current.name}</h2><p>${starsMarkup(j.stars)} · Niveau ${j.level}/20 · ${progress.xp} XP</p><progress aria-label="Progression de l’étoile en cours" max="2000" value="${j.cycleXP}"></progress><p>${j.complete ? 'Trois étoiles maîtrisées ! Continue à t’entraîner.' : `${j.remaining} XP avant le prochain niveau · ${2000 - j.cycleXP} XP avant la prochaine étoile`}</p><p>${selectedAdventure === 'clock' ? 'Lis l’horloge et réponds au format 24 h, en suivant Matin ou Après-midi.' : 'Additionne, soustrais et multiplie. Chaque étoile augmente la difficulté.'}</p></div><div class="quest-actions"><button class="primary" id="train-adventure">Jouer · ${modeLabel(selectedAdventure)}</button>${selectedAdventure === 'clock' ? '<button class="secondary" id="read-lesson">📖 Relire la leçon</button>' : ''}</div></section><ol class="journey">${STAGES.map((s, i) => `<li class="journey-stop ${i < j.stageIndex || j.complete ? 'complete' : i === j.stageIndex ? 'current' : 'locked'}" ${i === j.stageIndex ? 'aria-current="step"' : ''}><span class="stop-number">${i < j.stageIndex ? '✓' : i + 1}</span><span class="stop-icon" aria-hidden="true">${s.icon}</span><div><small>${i === j.stageIndex ? 'TU ES ICI' : `NIVEAU ${i + 1}`}</small><h3>${s.name}</h3><p>${s.story}</p>${s.reward ? `<span class="reward-label">🎁 ${s.reward}</span>` : ''}</div></li>`).join('')}</ol>`,
-  );
-  bindAdventureTabs(adventure);
-  document.querySelector('#open-grimoire').onclick = () => navigate('collection');
-  document.querySelector('#open-mage').onclick = () => navigate('settings');
-  document.querySelector('#train-adventure').onclick = () => start(selectedAdventure);
-  document.querySelector('#read-lesson')?.addEventListener('click', () => openClockLesson());
-}
-function collection() {
-  const p = adventureFor(state, selectedAdventure);
-  shell(
-    `<div class="page-heading"><div><p class="eyebrow">TES TRÉSORS</p><h1>Le grimoire des trésors<span class="gold">.</span></h1><p>Chaque aventure garde ses propres récompenses.</p></div></div>${adventureTabs()}${state.legacyRewards.length ? `<p class="collection-summary glass">Trésors conservés de ta première aventure : ${state.legacyRewards.map(escape).join(' · ')}</p>` : ''}<p class="collection-summary">${p.rewards.length} trésors · Record : ${p.bestStreak} bonnes réponses à la suite</p><div class="collection-grid">${STAGES.filter(
-      (s) => s.reward,
-    )
-      .map(
-        (s) =>
-          `<article class="glass treasure ${p.rewards.includes(s.reward) ? '' : 'undiscovered'}"><span aria-hidden="true">${p.rewards.includes(s.reward) ? s.icon : '♧'}</span><small>${p.rewards.includes(s.reward) ? 'DÉBLOQUÉ' : `NIVEAU ${s.index + 1}`}</small><h2>${s.reward}</h2><p>${s.name}</p></article>`,
-      )
-      .join('')}</div>`,
-  );
-  bindAdventureTabs(collection);
+  shell('');
+  adventureMap.open(document.querySelector('#main'), { adventure: selectedAdventure });
 }
 function settings() {
   const math = state.stats.math,
@@ -237,7 +231,7 @@ function settings() {
       )
       .join(
         '',
-      )}</div><p id="clock-stat-progression">Horloge : ${state.adventures.clock.xp} XP · ${journeyFor(state.adventures.clock.xp).stars}/3 étoiles · ${state.adventures.clock.score} points</p><p id="math-stat-progression">Maths : ${state.adventures.math.xp} XP · ${journeyFor(state.adventures.math.xp).stars}/3 étoiles · ${state.adventures.math.score} points</p><h3>Minutes à apprivoiser</h3><p>${errors.length ? errors.map(([k, v]) => `:${k.split(':')[1]} (${v.wrong} essai${v.wrong > 1 ? 's' : ''} à revoir)`).join(' · ') : 'Les difficultés apparaîtront ici après tes premiers essais.'}</p><button class="secondary" id="export">Exporter la sauvegarde</button></section><section class="glass settings-panel"><h2>Emporte ta magie</h2><label class="choice"><input type="checkbox" id="sound-enabled" ${state.settings.sound ? 'checked' : ''}><span><strong>Sons magiques</strong><small>Carillons de victoire et sons doux pour réessayer.</small></span></label><p>Installe Astréa sur ton écran d’accueil. Après une première ouverture en ligne, l’aventure fonctionne hors connexion.</p><button class="primary" data-install>＋ Installer l’application</button><p class="footnote">Sur iPhone ou iPad : dans Safari, touche Partager, puis « Sur l’écran d’accueil ». Sur Android ou ordinateur : utilise le bouton d’installation du navigateur.</p><p class="footnote">Ta progression reste sur cet appareil et ce navigateur. Aucune donnée n’est envoyée à un serveur.</p></section></div><p id="settings-status" class="footnote" role="status">Réglages enregistrés automatiquement.</p>`,
+      )}</div><p id="clock-stat-progression">Horloge : ${state.adventures.clock.xp} XP · ${adventureStars(state.adventures.clock)}/3 étoiles · ${state.adventures.clock.score} points</p><p id="math-stat-progression">Maths : ${state.adventures.math.xp} XP · ${adventureStars(state.adventures.math)}/3 étoiles · ${state.adventures.math.score} points</p><h3>Minutes à apprivoiser</h3><p>${errors.length ? errors.map(([k, v]) => `:${k.split(':')[1]} (${v.wrong} essai${v.wrong > 1 ? 's' : ''} à revoir)`).join(' · ') : 'Les difficultés apparaîtront ici après tes premiers essais.'}</p><button class="secondary" id="export">Exporter la sauvegarde</button></section><section class="glass settings-panel"><h2>Emporte ta magie</h2><label class="choice"><input type="checkbox" id="sound-enabled" ${state.settings.sound ? 'checked' : ''}><span><strong>Sons magiques</strong><small>Carillons de victoire et sons doux pour réessayer.</small></span></label><p>Installe Astréa sur ton écran d’accueil. Après une première ouverture en ligne, l’aventure fonctionne hors connexion.</p><button class="primary" data-install>＋ Installer l’application</button><p class="footnote">Sur iPhone ou iPad : dans Safari, touche Partager, puis « Sur l’écran d’accueil ». Sur Android ou ordinateur : utilise le bouton d’installation du navigateur.</p><p class="footnote">Ta progression reste sur cet appareil et ce navigateur. Aucune donnée n’est envoyée à un serveur.</p></section></div><p id="settings-status" class="footnote" role="status">Réglages enregistrés automatiquement.</p>`,
   );
   const option = (key) => AVATAR_OPTIONS[key].find((o) => o[0] === state.avatar[key])?.[1] ?? '';
   document.querySelector('#mage-card').innerHTML =
@@ -308,7 +302,7 @@ function navigate(next) {
     return;
   }
   screen = next;
-  (({ home, adventure, settings, collection, mage })[next] ?? home)();
+  (({ home, adventure, settings, mage })[next] ?? home)();
   window.scrollTo(0, 0);
   document.querySelector('#main').focus({ preventScroll: true });
 }
